@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPHEREx Image Comparison</title>
+<style>
+  :root { --bg:#0e1117; --panel:#171b24; --line:#2a3040; --text:#e6e9ef; --dim:#8b93a5; --accent:#5aa9ff; --warn:#ffb454; --bad:#ff6b6b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 system-ui, sans-serif; }
+  header { padding:18px 22px 6px; }
+  h1 { margin:0 0 4px; font-size:20px; font-weight:600; }
+  header p { margin:0; color:var(--dim); font-size:13px; }
+  form { padding:14px 22px; border-bottom:1px solid var(--line); }
+  .row { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
+  .grow { flex:1 1 320px; max-width:560px; }
+  .grow input { width:100%; font-size:17px; padding:11px 12px; }
+  #go { font-size:17px; padding:11px 20px; }
+  details { margin-top:12px; }
+  summary { cursor:pointer; color:var(--dim); font-size:13px; margin-bottom:10px; }
+  .hint { margin:10px 0 0; color:var(--dim); font-size:12px; max-width:640px; }
+  figure { cursor:zoom-in; }
+  figure:focus-visible { outline:2px solid var(--accent); }
+  dialog { background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:10px; padding:14px; max-width:min(92vw, 720px); }
+  dialog::backdrop { background:rgba(0,0,0,.75); }
+  dialog .pic { width:min(80vw, 70vh, 640px); }
+  dialog p { margin:10px 0 0; font-size:13px; }
+  dialog nav { display:flex; justify-content:space-between; gap:8px; margin-top:10px; }
+  dialog nav button { background:transparent; color:var(--accent); border-color:var(--line); font-weight:400; }
+  #lapse { padding:0 22px; }
+  #lapse[hidden] { display:none; }
+  .lapsebox { display:grid; grid-template-columns:minmax(240px, 440px) minmax(260px, 1fr); gap:16px; align-items:start; }
+  @media (max-width:760px) { .lapsebox { grid-template-columns:1fr; } }
+  #lapsePic { border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .lapsectl { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
+  .lapsectl button.sec { background:transparent; color:var(--accent); border-color:var(--line); font-weight:400; }
+  #lapseLabel { margin:12px 0 4px; font-size:15px; font-weight:600; }
+  #lapseInfo { margin:0; font-size:12.5px; color:var(--dim); }
+  #lapseSlider { width:100%; margin-top:12px; accent-color:var(--accent); }
+  .steps { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .steps button { background:transparent; color:var(--text); border-color:var(--line); font-weight:400; padding:4px 10px; font-size:13px; }
+  .steps button.on { border-color:var(--accent); color:var(--accent); }
+  #mti { margin-top:18px; }
+  #mti[hidden] { display:none; }
+  #mti h3 { margin:0 0 4px; font-size:15px; font-weight:600; }
+  #mtiGrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; margin-top:10px; }
+  #mtiGrid .pic { background:#000; }
+  #mtiGrid figcaption b { margin-bottom:3px; }
+  .pic svg.ov { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+  .move { color:var(--text); margin-top:3px; }
+  .ovkey { display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--dim); margin:6px 22px 0; align-items:center; }
+  .ovkey span { display:inline-flex; align-items:center; gap:6px; }
+  dialog .pic { cursor:crosshair; }
+  #pick { position:absolute; width:22px; height:22px; margin:-11px 0 0 -11px; border:2px solid #ffb454; border-radius:50%; pointer-events:none; display:none; }
+  #pickBar { display:none; margin-top:10px; font-size:13px; align-items:center; gap:10px; flex-wrap:wrap; }
+  #pickBar button { background:#ffb454; border-color:#ffb454; color:#1a1206; padding:6px 12px; }
+  #bar { height:3px; background:var(--accent); width:0; transition:width .2s; }
+  label { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--dim); }
+  input, select, button { font:inherit; color:var(--text); background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:8px 10px; }
+  button { background:var(--accent); color:#06121f; border-color:var(--accent); font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .quick { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:12px; color:var(--dim); font-size:13px; }
+  .quick button { background:transparent; color:var(--accent); border-color:var(--line); font-weight:400; padding:4px 10px; font-size:13px; }
+  #status { padding:12px 22px; color:var(--dim); font-size:13px; min-height:44px; }
+  #status.error { color:var(--bad); }
+  h2 { margin:18px 22px 8px; font-size:14px; font-weight:600; color:var(--dim); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(var(--tile), 1fr)); gap:12px; padding:0 22px; }
+  figure { margin:0; background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .pic { position:relative; aspect-ratio:1; background:#000 repeating-conic-gradient(#15181f 0 25%, #0b0d12 0 50%) 0 0/16px 16px; }
+  .pic img { width:100%; height:100%; display:block; image-rendering:pixelated; }
+  .pic::before, .pic::after { content:""; position:absolute; left:50%; top:50%; border:1px solid rgba(90,169,255,.8); pointer-events:none; }
+  .pic::before { width:18%; height:18%; transform:translate(-50%,-50%); border-radius:50%; }
+  .pic.nomark::before { display:none; }
+  .pic .msg { position:absolute; inset:0; display:grid; place-items:center; padding:10px; text-align:center; color:var(--dim); font-size:12px; }
+  figcaption { padding:8px 10px 10px; font-size:12px; }
+  figcaption b { display:block; font-size:13px; font-weight:600; }
+  .meta { color:var(--dim); }
+  .tag { display:inline-block; margin:4px 4px 0 0; padding:1px 6px; border-radius:10px; font-size:11px; border:1px solid var(--line); color:var(--dim); }
+  .tag.warn { color:var(--warn); border-color:var(--warn); }
+  .tag.bad { color:var(--bad); border-color:var(--bad); }
+  #analysis { padding:0 22px; }
+  #analysis[hidden] { display:none; }
+  .legend { display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--dim); margin:0 0 10px; align-items:center; }
+  .legend span { display:inline-flex; align-items:center; gap:5px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:12px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px 14px 14px; min-width:0; }
+  .card h3 { margin:0; font-size:15px; font-weight:600; }
+  .card .sub { margin:2px 0 8px; font-size:12px; color:var(--dim); }
+  .card .verdict { margin:8px 0 0; font-size:13px; }
+  .card .verdict b { font-weight:600; }
+  .card .stats { margin:6px 0 0; font:11.5px/1.5 ui-monospace, Consolas, monospace; color:var(--text); opacity:.85; overflow-wrap:anywhere; }
+  .methods { font-size:12.5px; color:var(--dim); max-width:900px; }
+  .methods li { margin:4px 0; }
+  .methods b { color:var(--text); font-weight:600; }
+  .card .note { margin:6px 0 0; font-size:11.5px; color:var(--dim); }
+  .card select { padding:3px 6px; font-size:12px; }
+  .card svg { width:100%; height:auto; display:block; }
+  .card svg text { fill:var(--dim); font:11px system-ui, sans-serif; }
+  .card svg .axis { stroke:var(--line); }
+  .card svg .grid { stroke:var(--line); stroke-opacity:.55; }
+  .card svg .band { fill:#ffffff; fill-opacity:.06; }
+  .empty { height:150px; display:grid; place-items:center; text-align:center; color:var(--dim); font-size:12px; padding:0 20px; }
+  #tip { position:fixed; z-index:20; pointer-events:none; background:#0b0d12; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:12px; white-space:pre-line; display:none; max-width:260px; }
+  .tablewrap { overflow:auto; max-height:320px; margin-top:8px; }
+  table { border-collapse:collapse; font-size:12px; width:100%; }
+  th, td { text-align:right; padding:4px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { color:var(--dim); font-weight:500; position:sticky; top:0; background:var(--panel); }
+  th:first-child, td:first-child { text-align:left; }
+  #analysis details { margin:10px 0 0; }
+  footer { padding:24px 22px; color:var(--dim); font-size:12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>SPHEREx Image Comparison</h1>
+  <p>The same spot on the sky at different times. Whatever shifts or brightens between the images is interesting.</p>
+</header>
+
+<form id="form">
+  <div class="row">
+    <label class="grow">Where do you want to look?
+      <input name="target" required placeholder="Name or coordinates, e.g. Barnard's Star" autofocus>
+    </label>
+    <button id="go">Show images</button>
+  </div>
+
+  <div class="quick">
+    <span>Or click an example:</span>
+    <button type="button" data-t="17h57m48.50s +04d41m36.1s" data-pmra="-801.55" data-pmdec="10362.39" data-epoch="2000" title="Fast-moving nearby star">Barnard's Star</button>
+    <button type="button" data-t="08h55m10.831s -7d14m42.53s" data-pmra="-8118" data-pmdec="680" data-epoch="2010.4" title="Fast-moving brown dwarf">WISE 0855</button>
+    <button type="button" data-t="eps Ind B" title="Pair of brown dwarfs">Epsilon Indi B</button>
+    <button type="button" data-t="RW Aur" title="Variable star">RW Aurigae</button>
+    <button type="button" data-t="R Dra" title="Variable star">R Draconis</button>
+  </div>
+
+  <details>
+    <summary>Settings</summary>
+    <div class="row">
+      <label>Infrared range
+        <select name="detector">
+          <option value="">mix all</option>
+          <option value="1">0.75–1.1 µm (detector 1)</option>
+          <option value="2" selected>1.1–1.6 µm (detector 2)</option>
+          <option value="3">1.6–2.4 µm (detector 3)</option>
+          <option value="4">2.4–3.8 µm (detector 4)</option>
+          <option value="5">3.8–4.4 µm (detector 5)</option>
+          <option value="6">4.4–5.0 µm (detector 6)</option>
+        </select>
+      </label>
+      <label>Field of view
+        <select name="fov">
+          <option value="20">Close-up (2′)</option>
+          <option value="48">narrow (5′)</option>
+          <option value="100" selected>normal (10′)</option>
+          <option value="200">wide (20′)</option>
+          <option value="400">very wide (41′, slower)</option>
+        </select>
+      </label>
+      <label title="More images = more precise analysis, but longer loading time">How many images
+        <select name="n">
+          <option>6</option><option>12</option><option selected>24</option><option>48</option><option>96</option>
+        </select>
+      </label>
+      <label>Image size
+        <select name="tile">
+          <option value="160">small</option><option value="220" selected>medium</option><option value="320">large</option>
+        </select>
+      </label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label title="Motion towards east in milliarcseconds per year (μ_α·cos δ)">Proper motion RA (mas/yr)
+        <input name="pmra" type="number" step="any" placeholder="automatic" style="width:150px">
+      </label>
+      <label title="Motion towards north in milliarcseconds per year">Proper motion Dec (mas/yr)
+        <input name="pmdec" type="number" step="any" placeholder="automatic" style="width:150px">
+      </label>
+      <label title="Year the entered coordinates refer to">Epoch of the coordinates
+        <input name="epoch" type="number" step="any" value="2000" style="width:110px">
+      </label>
+    </div>
+    <p class="hint">These three fields only place the circle on the object's current position. Leave empty if unknown. All measurements and results come exclusively from the SPHEREx images.</p>
+    <p class="hint">Tip: images from the same infrared range compare best. With “mix all”, brightness also changes with wavelength.</p>
+  </details>
+</form>
+
+<div id="bar"></div>
+<div id="status">Enter a target above or click an example.</div>
+<section id="lapse" hidden>
+  <h2 style="margin-left:0">Time-lapse: one image per pass</h2>
+  <div class="lapsebox">
+    <div class="pic nomark" id="lapsePic"><div class="msg" id="lapseMsg">Not created yet.</div></div>
+    <div>
+      <div class="lapsectl">
+        <label>Infrared range
+          <select id="lapseDet"></select>
+        </label>
+        <button type="button" id="lapseMake">Create time-lapse and difference images</button>
+        <button type="button" id="lapsePlay" class="sec" disabled>▶ Play</button>
+        <label>Speed
+          <select id="lapseSpeed"><option value="1200">slow</option><option value="600" selected>normal</option><option value="250">fast</option></select>
+        </label>
+        <label title="How the difference image is made">Difference from
+          <select id="mtiMode"><option value="einfach">two images (plain subtraction)</option><option value="mitteln" selected>all image pairs (averaged)</option></select>
+        </label>
+        <label title="For the difference images: maximum wavelength gap between two compared exposures">Wavelength gap
+          <span style="display:flex;gap:6px;align-items:center">
+            <select id="mtiPreset" aria-label="Preset for the wavelength gap">
+              <option value="0.01">strict (0.01 µm)</option><option value="0.03" selected>normal (0.03 µm)</option><option value="0.5">loose (0.5 µm)</option><option value="">custom value</option>
+            </select>
+            <input id="mtiTol" type="number" min="0.001" max="5" step="0.001" value="0.03" style="width:96px" aria-label="Maximum wavelength gap in micrometres">
+            <span style="color:var(--dim)">µm</span>
+          </span>
+        </label>
+        <label style="flex-direction:row;align-items:center;gap:6px;color:var(--text)"><input type="checkbox" id="lapseTrack" checked> Show track</label>
+      </div>
+      <p id="lapseLabel"></p>
+      <p id="lapseInfo"></p>
+      <input type="range" id="lapseSlider" min="0" max="0" value="0" step="1" aria-label="Choose pass" disabled>
+      <div class="steps" id="lapseSteps"></div>
+      <p class="hint">For each pass, all exposures of the chosen infrared range are aligned bilinearly and combined into one low-noise image (sigma-clipped mean). Every image therefore shows the same wavelength range without losing narrow emission bands.</p>
+    </div>
+  </div>
+  <div id="mti" hidden>
+    <h3>Motion detection: difference of consecutive passes</h3>
+    <p class="hint" style="margin:0" id="mtiHint"></p>
+    <div id="mtiGrid"></div>
+  </div>
+</section>
+<section id="analysis" hidden>
+  <h2 style="margin-left:0">Analysis of the brightest source in the circle</h2>
+  <div class="legend" id="legend"></div>
+  <div class="cards">
+    <div class="card">
+      <h3>Is the object moving?</h3>
+      <p class="sub">Measured position relative to the image centre, in arcseconds</p>
+      <div id="c1"></div>
+      <p class="verdict" id="v1"></p>
+      <p class="stats" id="s1"></p>
+      <p class="note">Small markers: individual images. Large markers with error bars: weighted mean per pass. Line: fitted linear motion.</p>
+    </div>
+    <div class="card">
+      <h3>What kind of object is it?</h3>
+      <p class="sub">Brightness (mJy) versus wavelength (µm)</p>
+      <div id="c2"></div>
+      <p class="verdict" id="v2"></p>
+      <p class="stats" id="s2"></p>
+      <p class="verdict" id="v2b"></p>
+      <p class="stats" id="s2b"></p>
+      <p class="note">Curve: fitted blackbody. Light bands: molecular bands (H₂O, CH₄, CO₂, CO); points below the curve there suggest a cool atmosphere.</p>
+    </div>
+    <div class="card">
+      <h3>Does the brightness change?</h3>
+      <p class="sub">Brightness relative to the fitted spectrum,
+        <select id="lcBand" aria-label="Infrared range for the light curve">
+          <option value="0">all infrared ranges</option>
+          <option value="1">0.75–1.1 µm</option><option value="2">1.1–1.6 µm</option><option value="3">1.6–2.4 µm</option>
+          <option value="4">2.4–3.8 µm</option><option value="5">3.8–4.4 µm</option><option value="6">4.4–5.0 µm</option>
+        </select>
+      </p>
+      <div id="c3"></div>
+      <p class="verdict" id="v3"></p>
+      <p class="stats" id="s3"></p>
+      <p class="note">100 % means: as bright as the fitted spectrum predicts at this wavelength. Large markers with error bars: weighted mean per pass.</p>
+    </div>
+  </div>
+  <details>
+    <summary>How it is computed (methods)</summary>
+    <ul class="methods">
+      <li><b>Time-lapse:</b> Per pass and detector, the outlier-rejected mean (4σ-clipped mean) of all exposures aligned bilinearly to north-up, each after subtracting its own sky background.</li>
+      <li><b>Difference from all image pairs (default):</b> Exposures of two passes are paired by smallest wavelength gap (each used at most once). Per pair D = B − s·A (s = flux scaling). The score is D divided by √(σ² + (0.2·R<sub>min</sub>)²), where R<sub>min</sub> = min(A, B) is the minimum of both passes: stationary stars are bright in A and B (residuals suppressed), moving objects are bright at the old and new position in only one pass each (R<sub>min</sub> ≈ 0, full sensitivity).</li>
+      <li><b>Difference from two images:</b> The single pair of exposures with the smallest wavelength gap; D = B − A for every pixel. The values can be downloaded as CSV (unit MJy/sr).</li>
+      <li><b>Measurement per image:</b> Background = 3σ-clipped median of a ring around the source. Position = intensity-weighted centroid in 5×5 pixels (search radius 37″). Brightness = aperture photometry in 3×3 pixels (18.5″).</li>
+      <li><b>Saturated stars:</b> If the core pixels are saturated and flagged, the position is derived from the wings (point-symmetric mask within 7 pixels).</li>
+    </ul>
+  </details>
+  <details>
+    <summary>Measurements as a table</summary>
+    <div class="tablewrap"><table id="table"></table></div>
+  </details>
+</section>
+<div class="ovkey" id="ovkey" hidden>
+  <span><svg width="16" height="16"><circle cx="8" cy="8" r="5" fill="none" stroke="#fff" stroke-width="1.6"/></svg>measured position in this image</span>
+  <span><svg width="30" height="16"><line x1="3" y1="8" x2="27" y2="8" stroke="#fff" stroke-width="1.4"/><circle cx="5" cy="8" r="3.4" fill="#3987e5" stroke="#171b24"/><circle cx="25" cy="8" r="3.4" fill="#d95926" stroke="#171b24"/></svg>mean position per pass, connected in time order</span>
+  <span>Tip: with the field of view “Close-up (2′)” the motion becomes clearly visible.</span>
+  <label style="flex-direction:row;align-items:center;gap:6px;color:var(--text);margin-left:auto"><input type="checkbox" id="tileTrack" checked> Show track in images</label>
+</div>
+<div id="tip"></div>
+<main id="out"></main>
+<dialog id="zoom">
+  <div class="pic" id="zoomPic"><img id="zoomImg" alt=""><div id="pick"></div></div>
+  <p id="zoomText"></p>
+  <p class="note" style="margin:6px 0 0;font-size:12px;color:var(--dim)">Circle not on the star? Click the star in the image to make it the new target.</p>
+  <div id="pickBar"><span id="pickText"></span><button type="button" id="pickGo">Centre on this position</button></div>
+  <nav><button type="button" id="prev">← earlier</button><button type="button" id="closeZoom">Close</button><button type="button" id="next">later →</button></nav>
+</dialog>
+<footer>Click an image to enlarge it; use the arrow keys to step through time. In the large view you can click a star to make it the new target. Data: NASA SPHEREx via IRSA (NASA/IPAC Infrared Science Archive) and the AWS Open Data Registry.</footer>
+
+<script>
+const API = location.protocol.startsWith("http") ? location.origin : ("http://" + "127.0.0.1:8000");
+const PARALLEL = 4;
+const form = document.getElementById("form");
+const statusEl = document.getElementById("status");
+const out = document.getElementById("out");
+let tiles = [], zoomIndex = 0;
+let track = [];
+let lastSearch = null;
+let results = [];
+let run = 0;
+
+function setStatus(text, isError = false) {
+  statusEl.textContent = text;
+  statusEl.classList.toggle("error", isError);
+}
+
+async function getJson(url) {
+  const r = await fetch(url);
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.detail || ("HTTP " + r.status));
+  return body;
+}
+
+function pickEvenly(list, n) {
+  if (list.length <= n) return list;
+  const picked = [];
+  for (let i = 0; i < n; i++) picked.push(list[Math.round(i * (list.length - 1) / (n - 1))]);
+  return [...new Set(picked)];
+}
+
+function makeTile(img) {
+  const fig = document.createElement("figure");
+  const pic = document.createElement("div");
+  pic.className = "pic nomark";
+  const msg = document.createElement("div");
+  msg.className = "msg";
+  msg.textContent = "loading …";
+  pic.append(msg);
+  const cap = document.createElement("figcaption");
+  const title = document.createElement("b");
+  title.textContent = img.date_iso.replace("T", " ").slice(0, 16) + " UTC";
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.textContent = "Day " + img.days_since_first.toFixed(1) + " · det. " + (img.detector ?? "?");
+  const move = document.createElement("div");
+  move.className = "meta move";
+  const tags = document.createElement("div");
+  cap.append(title, meta, move, tags);
+  fig.append(pic, cap);
+  fig.tabIndex = 0;
+  const tile = { fig, pic, msg, meta, tags, title, move, img, src: null };
+  const open = () => openZoom(tiles.indexOf(tile));
+  fig.addEventListener("click", open);
+  fig.addEventListener("keydown", e => { if (e.key === "Enter") open(); });
+  return tile;
+}
+
+function addTag(parent, text, cls = "") {
+  const s = document.createElement("span");
+  s.className = "tag " + cls;
+  s.textContent = text;
+  parent.append(s);
+}
+
+async function loadTile(tile, img, s, px, myRun) {
+  const url = API + "/api/load_spherex_mef?fits_url=" + encodeURIComponent(img.access_url)
+            + "&ra=" + s.ra + "&dec=" + s.dec + "&cutout_pixels=" + px;
+  try {
+    const f = await getJson(url);
+    if (myRun !== run) return;
+    const el = new Image();
+    el.src = tile.src = f.image_b64;
+    tile.f = f;
+    el.alt = "SPHEREx cutout from " + img.date_iso;
+    tile.msg.remove();
+    if (document.getElementById("tileTrack").checked) tile.pic.classList.remove("nomark");
+    tile.pic.append(el);
+    tile.meta.textContent += " · " + f.exact_wavelength_um.toFixed(3) + " µm";
+    if (f.aperture_flux_mjy !== null) addTag(tile.tags, f.aperture_flux_mjy.toFixed(2) + " mJy");
+    if (f.saturated) addTag(tile.tags, "star saturated", "warn");
+    else if (!f.source_detected) addTag(tile.tags, "no source in circle");
+    results.push({ img, f });
+    renderAnalysis();
+    if (f.coverage < 0.98) addTag(tile.tags, "image edge", "warn");
+    if (f.target_pixel_bad && !f.saturated) addTag(tile.tags, "target pixel bad", "bad");
+    f.flags_at_target.filter(n => n !== "SOURCE").forEach(n => addTag(tile.tags, n, "warn"));
+  } catch (e) {
+    if (myRun !== run) return;
+    tile.msg.textContent = e.message;
+  }
+}
+
+async function search() {
+  const myRun = ++run;
+  const data = new FormData(form);
+  const target = data.get("target").trim();
+  if (!target) return;
+  document.documentElement.style.setProperty("--tile", data.get("tile") + "px");
+
+  const q = new URLSearchParams({ target, detector: data.get("detector"), fov: data.get("fov"), n: data.get("n") });
+  if (data.get("pmra") !== "" && data.get("pmdec") !== "") { q.set("pmra", data.get("pmra")); q.set("pmdec", data.get("pmdec")); q.set("epoch", data.get("epoch") || 2000); }
+  history.replaceState(null, "", "?" + q);
+
+  out.replaceChildren();
+  tiles = [];
+  stopLapse(); lapse.run++; lapse.frames = [];
+  document.getElementById("lapse").hidden = true;
+  results = [];
+  renderAnalysis();
+  document.getElementById("bar").style.width = "0";
+  document.getElementById("go").disabled = true;
+  setStatus("Searching for matching exposures … If the NASA archive IRSA is down, the server searches the AWS bucket itself. The first time in a sky region this can take a few minutes (progress in the terminal).");
+
+  let s;
+  try {
+    let url = API + "/api/search?target=" + encodeURIComponent(target);
+    if (data.get("detector")) url += "&detector=" + data.get("detector");
+    if (data.get("pmra") !== "" && data.get("pmdec") !== "") url += "&pmra=" + data.get("pmra") + "&pmdec=" + data.get("pmdec") + "&epoch=" + (data.get("epoch") || 2000);
+    s = await getJson(url);
+  } catch (e) {
+    setStatus("Search failed: " + e.message + (e.message === "Failed to fetch" ? " – is the Python server running?" : ""), true);
+    document.getElementById("go").disabled = false;
+    return;
+  }
+  document.getElementById("go").disabled = false;
+  if (myRun !== run) return;
+
+  if (!s.count) {
+    setStatus("No SPHEREx exposures found for RA " + s.ra + "°, Dec " + s.dec + "°"
+      + (s.total ? " (another detector has " + s.total + ")." : "."), true);
+    return;
+  }
+
+  lastSearch = s;
+  setupLapse(s, s.images);
+  const chosen = pickEvenly(s.images, Number(data.get("n")));
+  setStatus(s.count + " exposures from " + s.epochs + " passes over " + Math.round(s.baseline_days)
+    + " days found, " + chosen.length + " of them shown (RA " + s.ra + "°, Dec " + s.dec + "°)"
+    + (s.proper_motion_mas_yr
+      ? " · proper motion applied: " + de(s.proper_motion_mas_yr[0], 0) + " / " + de(s.proper_motion_mas_yr[1], 0) + " mas/yr (" + s.proper_motion_source + ")"
+      : s.resolved_by_name ? " · Note: position from the name resolver (year 2000), without proper motion." : "")
+    + (s.search_service ? " · search: " + s.search_service : ""));
+
+  const jobs = [];
+  let grid = null, lastEpoch = null;
+  for (const img of chosen) {
+    if (img.epoch !== lastEpoch) {
+      const h = document.createElement("h2");
+      h.textContent = "Pass " + img.epoch + " · from " + new Date(img.date_iso + "Z").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+      grid = document.createElement("div");
+      grid.className = "grid";
+      out.append(h, grid);
+      lastEpoch = img.epoch;
+    }
+    const tile = makeTile(img);
+    grid.append(tile.fig);
+    tiles.push(tile);
+    jobs.push(() => loadTile(tile, img, s, data.get("fov"), myRun));
+  }
+
+  const total = jobs.length, summary = statusEl.textContent;
+  let done = 0;
+  const workers = Array.from({ length: PARALLEL }, async () => {
+    while (jobs.length && myRun === run) {
+      await jobs.shift()();
+      if (myRun !== run) return;
+      done++;
+      document.getElementById("bar").style.width = (100 * done / total) + "%";
+      setStatus(summary + " · " + done + " of " + total + " loaded");
+    }
+  });
+  await Promise.all(workers);
+  if (myRun === run) { setStatus(summary); document.getElementById("bar").style.width = "0"; }
+}
+
+// ===================== AUSWERTUNG =====================
+const SERIES = ["#3987e5", "#d95926", "#199e70"], OTHER = "#8b93a5";
+const SHAPES = ["circle", "square", "triangle", "diamond"];
+const epochColor = e => (e <= 3 ? SERIES[e - 1] : OTHER);
+const epochShape = e => SHAPES[(e - 1) % 4];
+const NS = "http://" + "www.w3.org/2000/svg";
+const tip = document.getElementById("tip");
+
+const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
+const de = (v, d = 1) => v.toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d });
+
+function el(name, attrs = {}, text) {
+  const e = document.createElementNS(NS, name);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function markEl(shape, x, y, r, color, big) {
+  const common = { fill: color, "fill-opacity": big ? 1 : 0.75, stroke: "#171b24", "stroke-width": 2 };
+  if (shape === "square") return el("rect", { x: x - r * 0.9, y: y - r * 0.9, width: r * 1.8, height: r * 1.8, ...common });
+  if (shape === "triangle") return el("path", { d: `M${x},${y - r * 1.15}L${x + r * 1.1},${y + r * 0.85}L${x - r * 1.1},${y + r * 0.85}Z`, ...common });
+  if (shape === "diamond") return el("path", { d: `M${x},${y - r * 1.25}L${x + r * 1.25},${y}L${x},${y + r * 1.25}L${x - r * 1.25},${y}Z`, ...common });
+  return el("circle", { cx: x, cy: y, r, ...common });
+}
+
+function ticks(lo, hi, n = 5) {
+  const span = hi - lo || 1, raw = span / n, mag = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 5, 10].map(m => m * mag).find(s => s >= raw);
+  const out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-6; v += step) out.push(Math.abs(v) < step * 1e-6 ? 0 : v);
+  return { out, digits: Math.max(0, -Math.floor(Math.log10(step))) };
+}
+
+function drawChart(host, points, o) {
+  host.replaceChildren();
+  if (!points.length) {
+    const d = document.createElement("div");
+    d.className = "empty";
+    d.textContent = o.empty || "No usable measurements yet.";
+    host.append(d);
+    return;
+  }
+  const W = 460, H = 290, L = 58, R = 14, T = 16, B = 38, pw = W - L - R, ph = H - T - B;
+  let [x0, x1] = o.xDomain, [y0, y1] = o.yDomain;
+  const sx = v => L + (o.reverseX ? (x1 - v) : (v - x0)) / (x1 - x0) * pw;
+  const sy = v => T + (y1 - v) / (y1 - y0) * ph;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": o.aria });
+
+  for (const b of o.bands || []) {
+    const xa = sx(Math.max(b.from, x0)), xb = sx(Math.min(b.to, x1));
+    svg.append(el("rect", { class: "band", x: Math.min(xa, xb), y: T, width: Math.abs(xb - xa), height: ph }));
+    svg.append(el("text", { x: (xa + xb) / 2, y: T - 4, "text-anchor": "middle" }, b.label));
+  }
+  const tx = ticks(x0, x1, 6), ty = ticks(y0, y1, 5);
+  for (const v of ty.out) {
+    svg.append(el("line", { class: "grid", x1: L, x2: L + pw, y1: sy(v), y2: sy(v) }));
+    svg.append(el("text", { x: L - 6, y: sy(v) + 4, "text-anchor": "end" }, de(v, ty.digits)));
+  }
+  for (const v of tx.out) {
+    svg.append(el("line", { class: "axis", x1: sx(v), x2: sx(v), y1: T + ph, y2: T + ph + 4 }));
+    svg.append(el("text", { x: sx(v), y: T + ph + 16, "text-anchor": "middle" }, de(v, tx.digits)));
+  }
+  svg.append(el("line", { class: "axis", x1: L, x2: L + pw, y1: T + ph, y2: T + ph }));
+  svg.append(el("line", { class: "axis", x1: L, x2: L, y1: T, y2: T + ph }));
+  if (o.cross) {
+    svg.append(el("line", { class: "axis", "stroke-dasharray": "3 3", x1: sx(0), x2: sx(0), y1: T, y2: T + ph }));
+    svg.append(el("line", { class: "axis", "stroke-dasharray": "3 3", x1: L, x2: L + pw, y1: sy(0), y2: sy(0) }));
+  }
+  svg.append(el("text", { x: L + pw / 2, y: H - 4, "text-anchor": "middle" }, o.xLabel));
+  const yl = el("text", { x: 11, y: T + ph / 2, "text-anchor": "middle", transform: `rotate(-90 11 ${T + ph / 2})` }, o.yLabel);
+  svg.append(yl);
+
+  const clipId = "clip" + (drawChart.n = (drawChart.n || 0) + 1);
+  const cp = el("clipPath", { id: clipId });
+  cp.append(el("rect", { x: L, y: T, width: pw, height: ph }));
+  svg.append(cp);
+  if (o.curve) svg.append(el("path", { d: o.curve.map((c, i) => (i ? "L" : "M") + sx(c[0]).toFixed(1) + "," + sy(c[1]).toFixed(1)).join(""),
+    fill: "none", stroke: "#c3c8d4", "stroke-width": 1.5, "stroke-opacity": 0.7, "clip-path": `url(#${clipId})` }));
+  for (const ln of o.lines || []) svg.append(el("line", { x1: sx(ln[0]), y1: sy(ln[1]), x2: sx(ln[2]), y2: sy(ln[3]),
+    stroke: "#c3c8d4", "stroke-width": 1.5, "stroke-opacity": 0.7, "clip-path": `url(#${clipId})` }));
+  for (const p of points) {
+    const bar = { stroke: epochColor(p.epoch), "stroke-width": p.big ? 1.5 : 1, "stroke-opacity": p.big ? 0.95 : 0.45, "clip-path": `url(#${clipId})` };
+    if (p.ey) svg.append(el("line", { x1: sx(p.x), x2: sx(p.x), y1: sy(p.y - p.ey), y2: sy(p.y + p.ey), ...bar }));
+    if (p.ex) svg.append(el("line", { x1: sx(p.x - p.ex), x2: sx(p.x + p.ex), y1: sy(p.y), y2: sy(p.y), ...bar }));
+  }
+
+  for (const p of [...points].sort((a, b) => (a.big ? 1 : 0) - (b.big ? 1 : 0))) {
+    const X = sx(p.x), Y = sy(p.y);
+    if (X < L - 1 || X > L + pw + 1 || Y < T - 1 || Y > T + ph + 1) continue;
+    svg.append(markEl(epochShape(p.epoch), X, Y, p.big ? 7 : 4, epochColor(p.epoch), p.big));
+    if (p.label) svg.append(el("text", { x: X + 10, y: Y + 4, style: "fill:var(--text)" }, p.label));
+    const hit = el("circle", { cx: X, cy: Y, r: 11, fill: "transparent" });
+    hit.addEventListener("mousemove", e => {
+      tip.textContent = p.tip;
+      tip.style.display = "block";
+      tip.style.left = Math.min(e.clientX + 14, innerWidth - 270) + "px";
+      tip.style.top = (e.clientY + 14) + "px";
+    });
+    hit.addEventListener("mouseleave", () => { tip.style.display = "none"; });
+    svg.append(hit);
+  }
+  host.append(svg);
+}
+
+// ---------- Statistik ----------
+const POS_FLOOR = 0.3;
+const FLUX_FLOOR = 0.05;
+const P_3SIGMA = 0.0027;
+
+function gammln(x) {
+  const c = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+  let y = x, t = x + 5.5, s = 1.000000000190015;
+  t -= (x + 0.5) * Math.log(t);
+  for (const cj of c) s += cj / ++y;
+  return -t + Math.log(2.5066282746310005 * s / x);
+}
+function gammq(a, x) {
+  if (x <= 0) return 1;
+  if (x < a + 1) {
+    let ap = a, sum = 1 / a, del = sum;
+    for (let n = 0; n < 500; n++) { ap++; del *= x / ap; sum += del; if (Math.abs(del) < Math.abs(sum) * 1e-14) break; }
+    return 1 - sum * Math.exp(-x + a * Math.log(x) - gammln(a));
+  }
+  let b = x + 1 - a, c = 1e300, d = 1 / b, hh = d;
+  for (let i = 1; i < 500; i++) {
+    const an = -i * (i - a);
+    b += 2; d = an * d + b; if (Math.abs(d) < 1e-300) d = 1e-300;
+    c = b + an / c; if (Math.abs(c) < 1e-300) c = 1e-300;
+    d = 1 / d; const del = d * c; hh *= del;
+    if (Math.abs(del - 1) < 1e-14) break;
+  }
+  return Math.exp(-x + a * Math.log(x) - gammln(a)) * hh;
+}
+const chi2p = (chi2, dof) => (dof > 0 ? gammq(dof / 2, Math.max(chi2, 0) / 2) : 1);
+function pToSigma(p) {
+  if (!(p > 0)) return 38;
+  let lo = 0, hi = 38;
+  for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2; (gammq(0.5, m * m / 2) > p ? (lo = m) : (hi = m)); }
+  return (lo + hi) / 2;
+}
+const fmtP = p => (p < 1e-4 ? "< 0,0001" : "= " + de(p, p < 0.01 ? 4 : 2));
+
+function wmean(v, e) {
+  const w = e.map(x => 1 / (x * x)), sw = w.reduce((a, b) => a + b, 0);
+  const m = v.reduce((a, x, i) => a + w[i] * x, 0) / sw;
+  const chi2 = v.reduce((a, x, i) => a + w[i] * (x - m) ** 2, 0), dof = v.length - 1;
+  const scale = dof > 0 ? Math.max(1, Math.sqrt(chi2 / dof)) : 1;
+  return { m, e: scale / Math.sqrt(sw), chi2, dof, n: v.length };
+}
+
+function wline(t, y, e) {
+  const w = e.map(x => 1 / (x * x)), sw = w.reduce((a, b) => a + b, 0);
+  const tbar = t.reduce((a, x, i) => a + w[i] * x, 0) / sw;
+  const stt = t.reduce((a, x, i) => a + w[i] * (x - tbar) ** 2, 0);
+  const a = y.reduce((s, x, i) => s + w[i] * x, 0) / sw;
+  const b = stt > 0 ? y.reduce((s, x, i) => s + w[i] * (t[i] - tbar) * x, 0) / stt : 0;
+  const chi2 = y.reduce((s, x, i) => s + w[i] * (x - a - b * (t[i] - tbar)) ** 2, 0);
+  const chi0 = y.reduce((s, x, i) => s + w[i] * (x - a) ** 2, 0);
+  return { a, b, ea: 1 / Math.sqrt(sw), eb: stt > 0 ? 1 / Math.sqrt(stt) : Infinity, tbar, chi2, chi0 };
+}
+
+function fitMotion(rows) {
+  let use = rows.slice(), fx, fy, scale = 1, dof = 0;
+  for (let it = 0; it < 4; it++) {
+    const t = use.map(r => r.t), s = use.map(r => r.s);
+    fx = wline(t, use.map(r => r.x), s); fy = wline(t, use.map(r => r.y), s);
+    dof = 2 * use.length - 4;
+    scale = dof > 0 ? Math.max(1, Math.sqrt((fx.chi2 + fy.chi2) / dof)) : 1;
+    const keep = use.filter(r => Math.hypot(r.x - fx.a - fx.b * (r.t - fx.tbar), r.y - fy.a - fy.b * (r.t - fy.tbar)) / (r.s * scale) < 3.5);
+    if (keep.length === use.length || keep.length < 4) break;
+    use = keep;
+  }
+  const mu = Math.hypot(fx.b, fy.b);
+  const dchi = ((fx.chi0 + fy.chi0) - (fx.chi2 + fy.chi2)) / (scale * scale);
+  const p = chi2p(dchi, 2);
+  return {
+    muE: fx.b, muN: fy.b, eE: fx.eb * scale, eN: fy.eb * scale, mu, p, sigma: pToSigma(p), dchi,
+    eMu: mu > 0 ? Math.hypot(fx.b * fx.eb, fy.b * fy.eb) / mu * scale : Math.hypot(fx.eb, fy.eb) * scale,
+    pa: (Math.atan2(fx.b, fy.b) * 180 / Math.PI + 360) % 360,
+    ePa: mu > 0 ? Math.hypot(fy.b * fx.eb, fx.b * fy.eb) / (mu * mu) * scale * 180 / Math.PI : 180,
+    chi2red: dof > 0 ? (fx.chi2 + fy.chi2) / dof : NaN, n: use.length, rejected: rows.length - use.length, fx, fy, used: use,
+  };
+}
+
+const planck = (w, T) => 1 / (w ** 3 * Math.expm1(14387.77 / (w * T)));
+function fitBlackbody(rows) {
+  const scan = (Tlo, Thi, steps) => {
+    const g = [];
+    for (let i = 0; i <= steps; i++) {
+      const T = Tlo * Math.pow(Thi / Tlo, i / steps);
+      let sfm = 0, smm = 0;
+      for (const r of rows) { const m = planck(r.w, T), w = 1 / (r.e * r.e); sfm += w * r.f * m; smm += w * m * m; }
+      const A = sfm / smm;
+      let chi2 = 0;
+      for (const r of rows) chi2 += ((r.f - A * planck(r.w, T)) / r.e) ** 2;
+      g.push({ T, A, chi2 });
+    }
+    return g;
+  };
+  const TMIN = 150, TMAX = 30000, dof = rows.length - 2;
+  const coarse = scan(TMIN, TMAX, 600);
+  const c0 = coarse.reduce((a, b) => (b.chi2 < a.chi2 ? b : a));
+  const fine = scan(Math.max(TMIN, c0.T / 1.25), Math.min(TMAX, c0.T * 1.25), 900);
+  const best = fine.reduce((a, b) => (b.chi2 < a.chi2 ? b : a));
+  const scale2 = dof > 0 ? Math.max(1, best.chi2 / dof) : 1;
+  const within = g => g.filter(q => q.chi2 <= best.chi2 + scale2);
+  let ins = within(fine), grid = fine;
+  if (ins[0] === fine[0] || ins[ins.length - 1] === fine[fine.length - 1]) { grid = coarse; ins = within(coarse); }
+  if (!ins.length) ins = [best];
+  return { T: best.T, A: best.A, lo: Math.min(ins[0].T, best.T), hi: Math.max(ins[ins.length - 1].T, best.T), chi2red: dof > 0 ? best.chi2 / dof : NaN,
+    openTop: grid === coarse && ins[ins.length - 1] === coarse[coarse.length - 1], n: rows.length };
+}
+function fitPowerLaw(rows) {
+  const g = rows.filter(r => r.f > 3 * r.e);
+  if (g.length < 3) return null;
+  const f = wline(g.map(r => Math.log(r.w)), g.map(r => Math.log(r.f)), g.map(r => r.e / r.f));
+  const dof = g.length - 2, scale = dof > 0 ? Math.max(1, Math.sqrt(f.chi2 / dof)) : 1;
+  return { alpha: f.b, e: f.eb * scale };
+}
+
+const DIRS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
+const BANDS = [
+  { from: 1.35, to: 1.45, label: "H₂O" }, { from: 1.8, to: 2.0, label: "H₂O" }, { from: 2.55, to: 2.85, label: "H₂O" },
+  { from: 3.2, to: 3.45, label: "CH₄" }, { from: 4.2, to: 4.35, label: "CO₂" }, { from: 4.55, to: 4.8, label: "CO" },
+];
+
+function setVerdict(id, strong, rest = "") {
+  const v = document.getElementById(id);
+  v.replaceChildren();
+  const b = document.createElement("b");
+  b.textContent = strong;
+  v.append(b, rest ? " " + rest : "");
+}
+
+// ---------- Spektrale Klassifikation (Server: /api/classify, Logik in spherex_classify.py) ----------
+const CLASS_TEXT = {
+  gelber_zwerg: "Yellow dwarf (spectral type G)", roter_zwerg: "Red dwarf (spectral type M)",
+  methan_atmosphaere: "Cool methane atmosphere (gas planet or brown dwarf)", k_zwerg: "K dwarf (between yellow and red dwarf)",
+  heisser_als_G: "Hotter than a yellow dwarf", nicht_zugeordnet: "Not assigned to any class", nicht_klassifizierbar: "Not classifiable yet",
+};
+let classifyTimer = null, classifyKey = "";
+function requestClassification(spec) {
+  const v = document.getElementById("v2b"), s = document.getElementById("s2b");
+  const key = run + ":" + spec.length;
+  if (key === classifyKey) return;
+  classifyKey = key;
+  clearTimeout(classifyTimer);
+  if (spec.length < 5) { v.textContent = ""; s.textContent = ""; return; }
+  const myRun = run;
+  classifyTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(API + "/api/classify", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wave_um: spec.map(q => q.w), flux_mjy: spec.map(q => q.f), err_mjy: spec.map(q => q.r.f.aperture_flux_err_mjy) }) });
+      const c = await r.json().catch(() => ({}));
+      if (myRun !== run) return;
+      if (!r.ok) { v.textContent = ""; s.textContent = "Classification not available: " + (c.detail || "HTTP " + r.status); return; }
+      const name = CLASS_TEXT[c.label] || c.label;
+      const status = { eindeutig: "clear", wahrscheinlich: "likely", unsicher: "uncertain", abgelehnt: "rejected" }[c.status] || c.status;
+      const how = c.probability != null ? status + ", probability " + de(c.probability * 100, 0) + " %" : status;
+      setVerdict("v2b", "Class: " + name + ".", "(" + how + ")" + (c.nearest_type ? " Nearest spectral type " + c.nearest_type + ", about " + de(c.teff_k, 0) + " K." : ""));
+      const qs = Object.entries(c.q || {}).map(([b, o]) => "q(" + b + ") = " + de(o.value, 2)).join(" · ");
+      s.textContent = [qs, c.chi2 != null ? "χ² = " + de(c.chi2, 1) + " at " + c.dof + " dof" : "", ...(c.warnings || [])].filter(Boolean).join("\n");
+      s.style.whiteSpace = "pre-line";
+    } catch (e) { if (myRun === run) { v.textContent = ""; s.textContent = ""; } }
+  }, 500);
+}
+
+function renderAnalysis() {
+  const box = document.getElementById("analysis");
+  box.hidden = results.length === 0;
+  if (!results.length) { track = []; document.getElementById("ovkey").hidden = true; return; }
+
+  const byTime = (a, b) => a.img.mjd - b.img.mjd;
+  const used = results
+    .filter(r => r.f.source_detected && !r.f.saturated && r.f.aperture_flux_mjy !== null && !r.f.target_pixel_bad).sort(byTime);
+  const usedPos = results
+    .filter(r => r.f.source_detected && r.f.offset_err_arcsec != null && (r.f.saturated || !r.f.target_pixel_bad)).sort(byTime);
+  const nSat = results.filter(r => r.f.saturated).length;
+  const epochs = [...new Set(results.map(r => r.img.epoch))].sort((a, b) => a - b);
+  const info = r => r.img.date_iso.slice(0, 10) + " · pass " + r.img.epoch + "\n"
+    + de(r.f.exact_wavelength_um, 3) + " µm · " + (r.f.aperture_flux_mjy === null ? "saturated" : de(r.f.aperture_flux_mjy, 2) + " mJy");
+
+  const legend = document.getElementById("legend");
+  legend.replaceChildren();
+  for (const e of epochs) {
+    const s = document.createElement("span"), svg = el("svg", { width: 14, height: 14, viewBox: "0 0 14 14" });
+    svg.append(markEl(epochShape(e), 7, 7, 4.5, epochColor(e), true));
+    const first = results.filter(r => r.img.epoch === e).map(r => r.img.date_iso).sort()[0];
+    s.append(svg, "Pass " + e + " (" + new Date(first + "Z").toLocaleDateString("en-GB", { month: "short", year: "numeric" }) + ")");
+    legend.append(s);
+  }
+  const cnt = document.createElement("span");
+  cnt.textContent = usedPos.length + " of " + results.length + " images usable for position, " + used.length + " for brightness"
+    + (nSat ? " (" + nSat + " saturated)" : "");
+  legend.append(cnt);
+
+  // ---------- 1. Bewegung ----------
+  const tRef = usedPos.length ? mean(usedPos.map(r => r.img.mjd)) : 0;
+  const pos = usedPos.map(r => ({
+    t: (r.img.mjd - tRef) / 365.25, x: r.f.offset_east_arcsec, y: r.f.offset_north_arcsec,
+    s: Math.hypot(r.f.offset_err_arcsec, POS_FLOOR), epoch: r.img.epoch, r }));
+  const perEpoch = epochs.map(e => {
+    const g = pos.filter(q => q.epoch === e);
+    if (!g.length) return null;
+    const mx = wmean(g.map(q => q.x), g.map(q => q.s)), my = wmean(g.map(q => q.y), g.map(q => q.s));
+    return { e, n: g.length, x: mx.m, y: my.m, sx: mx.e, sy: my.e };
+  }).filter(Boolean);
+
+  track = perEpoch;
+  updateOverlays();
+
+  const pts1 = pos.map(q => ({ x: q.x, y: q.y, epoch: q.epoch,
+    tip: info(q.r) + "\n" + de(q.x) + "″ east, " + de(q.y) + "″ north (± " + de(q.s) + "″)" }));
+  for (const m of perEpoch) pts1.push({ x: m.x, y: m.y, ex: m.sx, ey: m.sy, epoch: m.e, big: true, label: "P" + m.e,
+    tip: "Weighted mean pass " + m.e + " (" + m.n + " images)\n" + de(m.x, 2) + " ± " + de(m.sx, 2) + "″ east\n" + de(m.y, 2) + " ± " + de(m.sy, 2) + "″ north" });
+  const reach = Math.max(4, ...pts1.map(p => Math.max(Math.abs(p.x), Math.abs(p.y)))) * 1.15;
+  const aspect = (460 - 58 - 14) / (290 - 16 - 38);
+  const spanYears = pos.length ? Math.max(...pos.map(q => q.t)) - Math.min(...pos.map(q => q.t)) : 0;
+  const mot = pos.length >= 4 && perEpoch.length >= 2 && spanYears > 0.08 ? fitMotion(pos) : null;
+  const fitLine = mot ? (() => {
+    const t0 = Math.min(...pos.map(q => q.t)), t1 = Math.max(...pos.map(q => q.t));
+    const at = t => [mot.fx.a + mot.fx.b * (t - mot.fx.tbar), mot.fy.a + mot.fy.b * (t - mot.fy.tbar)];
+    return [[...at(t0), ...at(t1)]];
+  })() : [];
+  drawChart(document.getElementById("c1"), pts1, {
+    xDomain: [-reach * aspect, reach * aspect], yDomain: [-reach, reach], reverseX: true, cross: true, lines: fitLine,
+    xLabel: "← East      Offset (″)      West →", yLabel: "Offset to north (″)",
+    aria: "Source position per image and pass", empty: "No source was found in the circle in any image.",
+  });
+  const s1 = document.getElementById("s1");
+  s1.textContent = "";
+  if (!mot) {
+    setVerdict("v1", "Not assessable yet.", "This needs at least four position measurements from two passes.");
+  } else {
+    const dir = DIRS[Math.round(mot.pa / 45) % 8];
+    const nMin = Math.min(...perEpoch.map(m => m.n));
+    const facts = "Proper motion μ = " + de(mot.mu, 2) + " ± " + de(mot.eMu, 2) + "″ per year towards " + dir + " (" + de(mot.sigma) + "σ).";
+    if (!(mot.p < P_3SIGMA)) {
+      setVerdict("v1", "No detectable motion.", "Upper limit (3σ): μ < " + de(mot.mu + 3 * mot.eMu, 2) + "″ per year over " + de(spanYears, 2) + " years.");
+    } else if (nMin < 3) {
+      setVerdict("v1", "Hint of motion, but not robust.", facts + " One pass has only " + nMin + " measurement(s); a neighbouring star or noise peak can mimic this.");
+    } else if (mot.mu > 15) {
+      setVerdict("v1", "Probably a mismeasurement.", facts + " That is faster than any known star (maximum just over 10″ per year). Probably different sources were measured; for a Solar System object it would be normal.");
+    } else {
+      setVerdict("v1", "Yes, it is moving.", facts);
+    }
+    let line = "μ_α* = " + de(mot.muE * 1000, 0) + " ± " + de(mot.eE * 1000, 0) + " mas/yr · μ_δ = " + de(mot.muN * 1000, 0) + " ± " + de(mot.eN * 1000, 0)
+      + " mas/yr · PA = " + de(mot.pa, 0) + "° ± " + de(Math.min(mot.ePa, 180), 0) + "° · Δχ² = " + de(mot.dchi) + " (2 dof), p " + fmtP(mot.p)
+      + " · χ²_red = " + de(mot.chi2red, 2) + " · N = " + mot.n + (mot.rejected ? " (" + mot.rejected + " rejected)" : "") + " · baseline " + de(spanYears, 2) + " yr";
+    const lit = lastSearch && lastSearch.proper_motion_mas_yr;
+    if (lit) line += "\nGiven for alignment (" + lastSearch.proper_motion_source + ", not used in the measurement): μ_α* = " + de(lit[0], 0) + ", μ_δ = " + de(lit[1], 0) + " mas/yr → μ = " + de(Math.hypot(lit[0], lit[1]) / 1000, 2) + "″/yr";
+    s1.textContent = line;
+    s1.style.whiteSpace = "pre-line";
+  }
+
+  // ---------- 2. Spektrum ----------
+  const spec = used.filter(r => r.f.aperture_flux_err_mjy > 0).map(r => ({ w: r.f.exact_wavelength_um, f: r.f.aperture_flux_mjy,
+    e: Math.hypot(r.f.aperture_flux_err_mjy, FLUX_FLOOR * Math.abs(r.f.aperture_flux_mjy)), epoch: r.img.epoch, r }));
+  const cover = spec.length ? Math.max(...spec.map(q => q.w)) - Math.min(...spec.map(q => q.w)) : 0;
+  const bb = spec.length >= 5 && cover >= 1.0 ? fitBlackbody(spec) : null;
+  const pl = spec.length >= 5 && cover >= 1.0 ? fitPowerLaw(spec) : null;
+  const pts2 = spec.map(q => ({ x: q.w, y: q.f, ey: q.e, epoch: q.epoch, tip: info(q.r) + " ± " + de(q.e, 2) }));
+  const f2 = pts2.map(p => p.y), top2 = Math.max(...f2, 0.001) * 1.12, low2 = Math.min(0, ...f2);
+  const curve = bb ? Array.from({ length: 90 }, (_, i) => { const w = 0.7 + 4.4 * i / 89; return [w, bb.A * planck(w, bb.T)]; }) : null;
+  drawChart(document.getElementById("c2"), pts2, {
+    xDomain: [0.7, 5.1], yDomain: [low2, top2], bands: BANDS, curve, xLabel: "Wavelength (µm)", yLabel: "Flux density F_ν (mJy)",
+    aria: "Spectrum: flux density versus wavelength",
+  });
+  const s2 = document.getElementById("s2");
+  s2.textContent = "";
+  requestClassification(spec);
+  if (!bb && nSat > results.length / 2) {
+    setVerdict("v2", "Not measurable: the star is saturated.", "In " + nSat + " of " + results.length + " images the brightest pixels are saturated. Without the core no brightness can be measured.");
+  } else if (!bb) {
+    setVerdict("v2", "Not assessable yet.", "This needs at least five measurements spanning more than 1 µm. Set the infrared range to “mix all” and load more images.");
+  } else {
+    const range = bb.openTop ? "above " + de(bb.lo, 0) + " K" : de(bb.T, 0) + " K (1σ: " + de(bb.lo, 0) + "–" + de(bb.hi, 0) + " K)";
+    let kind;
+    if (bb.openTop || bb.T > 5000) kind = "Consistent with a Sun-like or hotter star.";
+    else if (bb.T > 2500) kind = "Consistent with a cool star (spectral type K or M).";
+    else if (bb.T > 1300) kind = "Consistent with a very cool object: late M or L dwarf, or a dust-enshrouded star.";
+    else kind = "Consistent with an extremely cool object (T or Y dwarf) or warm dust.";
+    const poor = bb.chi2red > 3 ? " The blackbody describes the data only roughly, though (χ²_red = " + de(bb.chi2red) + "); possible causes are molecular bands, emission lines or brightness changes." : "";
+    setVerdict("v2", "Colour temperature " + range + ".", kind + poor);
+    s2.textContent = "Blackbody: T = " + de(bb.T, 0) + " K, χ²_red = " + de(bb.chi2red, 2) + ", N = " + bb.n
+      + (pl ? " · spectral index α = " + de(pl.alpha, 2) + " ± " + de(pl.e, 2) + " (F_ν ∝ λ^α; Rayleigh-Jeans: −2)" : "");
+  }
+
+  // ---------- 3. Helligkeitsaenderung ----------
+  const band = Number(document.getElementById("lcBand").value);
+  const base = spec.filter(q => q.f > 0 && (!band || q.r.img.detector === band));
+  const level = base.length ? wmean(base.map(q => q.f), base.map(q => q.e)).m : 1;
+  const model = w => (bb ? bb.A * planck(w, bb.T) : level);
+  const lc = base.map(q => ({ ...q, v: 100 * q.f / model(q.w), ve: 100 * q.e / model(q.w) }));
+  const t0 = Math.min(...results.map(r => r.img.mjd));
+  const pts3 = lc.map(q => ({ x: q.r.img.mjd - t0, y: q.v, epoch: q.epoch, tip: info(q.r) + "\n" + de(q.v, 0) + " ± " + de(q.ve, 0) + " % of model" }));
+  const ep3 = epochs.map(e => {
+    const g = lc.filter(q => q.epoch === e);
+    if (g.length < 2) return null;
+    const m = wmean(g.map(q => q.v), g.map(q => q.ve));
+    return { e, n: g.length, m: m.m, se: m.e, t: mean(g.map(q => q.r.img.mjd)) - t0 };
+  }).filter(Boolean);
+  for (const m of ep3) pts3.push({ x: m.t, y: m.m, ey: m.se, epoch: m.e, big: true, label: "P" + m.e,
+    tip: "Weighted mean pass " + m.e + " (" + m.n + " images)\n" + de(m.m, 1) + " ± " + de(m.se, 1) + " %" });
+  const span3 = Math.max(10, ...results.map(r => r.img.mjd - t0));
+  const f3 = pts3.map(p => p.y);
+  drawChart(document.getElementById("c3"), pts3, {
+    xDomain: [-span3 * 0.04, span3 * 1.08], yDomain: [Math.min(50, ...f3) * 0.9, Math.max(150, ...f3) * 1.08],
+    xLabel: "Days since first exposure", yLabel: "relative brightness (%)" + (band ? " · detector " + band : ""),
+    aria: "Light curve: relative brightness over time", empty: "No usable measurements in this infrared range.",
+  });
+  const s3 = document.getElementById("s3");
+  s3.textContent = "";
+  if (ep3.length < 2 && nSat > results.length / 2) {
+    setVerdict("v3", "Not measurable: the star is saturated.", "A light curve needs the brightness. The position can still be measured from the star's wings.");
+  } else if (ep3.length < 2) {
+    setVerdict("v3", "Not assessable yet.", "This needs at least two measurements in each of two passes. Choose another range or load more images.");
+  } else {
+    const all = wmean(ep3.map(m => m.m), ep3.map(m => m.se));
+    const p = chi2p(all.chi2, all.dof), sig = pToSigma(p);
+    const lo = ep3.reduce((a, b) => (b.m < a.m ? b : a)), hi = ep3.reduce((a, b) => (b.m > a.m ? b : a));
+    const dm = 2.5 * Math.log10(hi.m / lo.m), edm = 1.0857 * Math.hypot(hi.se / hi.m, lo.se / lo.m);
+    const nMin = Math.min(lo.n, hi.n);
+    const facts = "Pass " + hi.e + " is " + de((hi.m / lo.m - 1) * 100, 0) + " % brighter than pass " + lo.e
+      + " (Δm = " + de(dm, 2) + " ± " + de(edm, 2) + " mag, " + de(sig) + "σ).";
+    if (!(p < P_3SIGMA)) setVerdict("v3", "No detectable change.", "Largest difference Δm = " + de(dm, 2) + " ± " + de(edm, 2) + " mag; consistent with constant brightness.");
+    else if (nMin < 3 || dm < 0.1) setVerdict("v3", "Hint of a change, but not robust.", facts + (nMin < 3 ? " One pass has only " + nMin + " measurements." : " Differences below 0.1 mag can come from the measurement method."));
+    else setVerdict("v3", "Yes, the brightness changes.", facts);
+    s3.textContent = "χ² = " + de(all.chi2) + " at " + all.dof + " dof, p " + fmtP(p) + " · passes: "
+      + ep3.map(m => "P" + m.e + " " + de(m.m, 1) + " ± " + de(m.se, 1) + " % (N = " + m.n + ")").join(", ")
+      + (bb ? " · model: blackbody " + de(bb.T, 0) + " K" : " · model: mean");
+  }
+
+  // ---------- Tabelle ----------
+  const table = document.getElementById("table");
+  table.replaceChildren();
+  const head = table.insertRow();
+  for (const t of ["Date (UTC)", "MJD", "Pass", "Det.", "λ (µm)", "F_ν (mJy)", "± (mJy)", "East (″)", "North (″)", "± (″)", "S/N", "Notes"]) {
+    const th = document.createElement("th"); th.textContent = t; head.append(th);
+  }
+  for (const r of [...results].sort((a, b) => a.img.mjd - b.img.mjd)) {
+    const row = table.insertRow(), f = r.f, n = (v, d) => (v === null || v === undefined ? "–" : de(v, d));
+    const notes = [...f.flags_at_target.filter(x => x !== "SOURCE"), f.saturated ? "saturated" : f.target_pixel_bad ? "target pixel bad" : "", f.source_detected ? "" : "no source"].filter(Boolean).join(", ");
+    for (const c of [r.img.date_iso.replace("T", " ").slice(0, 16), n(r.img.mjd, 4), r.img.epoch, r.img.detector ?? "?", n(f.exact_wavelength_um, 4),
+      n(f.aperture_flux_mjy, 4), n(f.aperture_flux_err_mjy, 4), n(f.offset_east_arcsec, 2), n(f.offset_north_arcsec, 2), n(f.offset_err_arcsec, 2), n(f.source_snr, 0), notes]) {
+      row.insertCell().textContent = c;
+    }
+  }
+}
+document.getElementById("lcBand").addEventListener("change", renderAnalysis);
+
+const zoom = document.getElementById("zoom");
+function openZoom(i) {
+  const step = i >= zoomIndex ? 1 : -1;
+  for (let k = 0; k < tiles.length && tiles[i] && !tiles[i].src; k++) i += step;
+  if (!tiles[i] || !tiles[i].src) return;
+  zoomIndex = i;
+  document.getElementById("zoomImg").src = tiles[i].src;
+  document.getElementById("zoomText").textContent =
+    "Image " + (i + 1) + " of " + tiles.length + " · " + tiles[i].title.textContent + " · " + tiles[i].meta.textContent;
+  clearPick();
+  drawOverlay(document.getElementById("zoomPic"), tiles[i]);
+  if (!zoom.open) zoom.showModal();
+}
+
+// ===================== ZEITRAFFER =====================
+const lapse = { frames: [], index: 0, timer: null, run: 0 };
+const DET_LABEL = { 1: "0.75–1.1 µm", 2: "1.1–1.6 µm", 3: "1.6–2.4 µm", 4: "2.4–3.8 µm", 5: "3.8–4.4 µm", 6: "4.4–5.0 µm" };
+const MAX_PER_EPOCH = 60;
+
+function setupLapse(s, all) {
+  stopLapse();
+  lapse.frames = []; lapse.all = all; lapse.run++;
+  document.getElementById("lapse").hidden = !all.length;
+  const sel = document.getElementById("lapseDet");
+  sel.replaceChildren();
+  const counts = {};
+  for (const im of all) if (im.detector) counts[im.detector] = (counts[im.detector] || 0) + 1;
+  const dets = Object.keys(counts).map(Number).sort((a, b) => a - b);
+  for (const d of dets) {
+    const o = document.createElement("option");
+    o.value = d; o.textContent = (DET_LABEL[d] || "Detector " + d) + " (" + counts[d] + " exposures)";
+    sel.append(o);
+  }
+  const wanted = Number(form.detector.value);
+  sel.value = dets.includes(wanted) ? wanted : (dets.includes(2) ? 2 : dets[0]);
+  showLapseMessage("Choose an infrared range and click “Create time-lapse and difference images”.");
+  document.getElementById("mti").hidden = true;
+  document.getElementById("lapseLabel").textContent = "";
+  document.getElementById("lapseInfo").textContent = "";
+  document.getElementById("lapseSteps").replaceChildren();
+  document.getElementById("lapsePlay").disabled = true;
+  document.getElementById("lapseSlider").disabled = true;
+}
+function showLapseMessage(text) {
+  const pic = document.getElementById("lapsePic");
+  pic.replaceChildren();
+  pic.classList.add("nomark");
+  const m = document.createElement("div");
+  m.className = "msg"; m.textContent = text;
+  pic.append(m);
+}
+function stopLapse() {
+  clearInterval(lapse.timer); lapse.timer = null;
+  document.getElementById("lapsePlay").textContent = "▶ Play";
+}
+function showLapseFrame(i) {
+  if (!lapse.frames.length) return;
+  lapse.index = (i + lapse.frames.length) % lapse.frames.length;
+  const fr = lapse.frames[lapse.index];
+  const pic = document.getElementById("lapsePic");
+  let img = pic.querySelector("img");
+  if (!img) { pic.replaceChildren(); img = new Image(); pic.append(img); pic.classList.remove("nomark"); }
+  img.src = fr.f.image_b64;
+  img.alt = "Averaged SPHEREx image, pass " + fr.epoch;
+  pic.querySelectorAll("svg.ov").forEach(n => n.remove());
+  if (document.getElementById("lapseTrack").checked) drawOverlay(pic, { f: { ...fr.f, source_detected: false }, img: { epoch: fr.epoch } }, true);
+  document.getElementById("lapseLabel").textContent = "Pass " + fr.epoch + " · " + fr.from + (fr.to !== fr.from ? " to " + fr.to : "");
+  document.getElementById("lapseInfo").textContent = fr.f.n_used + " exposures averaged · wavelengths " + de(fr.f.wavelength_min_um, 2)
+    + " to " + de(fr.f.wavelength_max_um, 2) + " µm" + (fr.f.n_used < fr.f.n_requested ? " · " + (fr.f.n_requested - fr.f.n_used) + " not loadable" : "");
+  document.getElementById("lapseSlider").value = lapse.index;
+  document.querySelectorAll("#lapseSteps button").forEach((b, k) => b.classList.toggle("on", k === lapse.index));
+}
+async function makeLapse() {
+  if (!lastSearch || !lapse.all) return;
+  stopLapse();
+  const myRun = ++lapse.run, det = Number(document.getElementById("lapseDet").value);
+  const px = Math.min(Number(form.fov.value) || 100, 200);
+  const list = lapse.all.filter(im => im.detector === det);
+  const epochs = [...new Set(list.map(im => im.epoch))].sort((a, b) => a - b);
+  const btn = document.getElementById("lapseMake");
+  btn.disabled = true;
+  lapse.frames = [];
+  document.getElementById("lapseSteps").replaceChildren();
+  let vmin = null, vmax = null, failed = 0;
+  const groups = [];
+  document.getElementById("mti").hidden = true;
+  for (let k = 0; k < epochs.length; k++) {
+    const group = pickEvenly(list.filter(im => im.epoch === epochs[k]), MAX_PER_EPOCH);
+    groups.push({ epoch: epochs[k], group });
+    showLapseMessage("Pass " + epochs[k] + " (" + (k + 1) + " of " + epochs.length + "): loading and averaging " + group.length + " exposures …");
+    try {
+      const r = await fetch(API + "/api/stack", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ra: lastSearch.ra, dec: lastSearch.dec, urls: group.map(im => im.access_url), cutout_pixels: px, vmin, vmax }) });
+      const f = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(f.detail || ("HTTP " + r.status));
+      if (myRun !== lapse.run) return;
+      if (vmin === null) { vmin = f.vmin; vmax = f.vmax; }
+      const day = iso => new Date(iso + "Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+      lapse.frames.push({ epoch: epochs[k], f, from: day(group[0].date_iso), to: day(group[group.length - 1].date_iso) });
+    } catch (e) {
+      if (myRun !== lapse.run) return;
+      failed++;
+      console.warn("Time-lapse, pass " + epochs[k] + ": " + e.message);
+    }
+  }
+  btn.disabled = false;
+  if (!lapse.frames.length) { showLapseMessage("The time-lapse could not be created" + (failed ? " (" + failed + " passes failed)." : ".")); return; }
+  const steps = document.getElementById("lapseSteps");
+  lapse.frames.forEach((fr, k) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = "Pass " + fr.epoch;
+    b.addEventListener("click", () => { stopLapse(); showLapseFrame(k); });
+    steps.append(b);
+  });
+  const slider = document.getElementById("lapseSlider");
+  slider.max = lapse.frames.length - 1; slider.disabled = lapse.frames.length < 2;
+  document.getElementById("lapsePlay").disabled = lapse.frames.length < 2;
+  showLapseFrame(0);
+  if (lapse.frames.length < 2) document.getElementById("lapseInfo").textContent += " · Only one pass available, so no time-lapse.";
+  else toggleLapse();
+  makeMti(groups, px, myRun);
+}
+
+// ---------- Bewegungsanzeige (Moving Target Indication) ----------
+const MTI_SNR = 5;
+async function makeMti(groups, px, myRun) {
+  const box = document.getElementById("mti"), grid = document.getElementById("mtiGrid");
+  grid.replaceChildren();
+  if (groups.length < 2) { box.hidden = true; return; }
+  box.hidden = false;
+  const tolField = document.getElementById("mtiTol");
+  let tol = Number(String(tolField.value).replace(",", "."));
+  if (!(tol > 0)) tol = 0.03;
+  tol = Math.min(Math.max(tol, 0.001), 5);
+  tolField.value = tol;
+  const mode = document.getElementById("mtiMode").value;
+  document.getElementById("mtiHint").innerHTML = (mode === "einfach"
+    ? "From two consecutive passes, the two exposures with the closest wavelengths are taken. Then pixel by pixel: later image minus earlier image."
+    : "Each exposure of the earlier pass is paired with the exposure of the later pass that has the closest wavelength. The differences of all pairs are averaged; stationary stars are suppressed using the minimum of both passes.")
+    + " <b style='color:var(--text)'>Grey</b> = unchanged, <b style='color:var(--text)'>light</b> = brighter in the later image, <b style='color:var(--text)'>dark</b> = fainter in the later image. A moving object appears as a dark–light double spot.";
+  for (let k = 0; k + 1 < groups.length; k++) {
+    const a = groups[k], b = groups[k + 1];
+    const fig = document.createElement("figure"), pic = document.createElement("div"), cap = document.createElement("figcaption");
+    fig.style.cursor = "default";
+    pic.className = "pic nomark";
+    const msg = document.createElement("div");
+    msg.className = "msg"; msg.textContent = "comparing pass " + a.epoch + " with " + b.epoch + " …";
+    pic.append(msg);
+    const title = document.createElement("b");
+    title.textContent = "Pass " + a.epoch + " → " + b.epoch;
+    const meta = document.createElement("div"); meta.className = "meta";
+    const verdict = document.createElement("div"); verdict.className = "meta move";
+    cap.append(title, verdict, meta);
+    fig.append(pic, cap);
+    grid.append(fig);
+    try {
+      const r = await fetch(API + "/api/mti", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ra: lastSearch.ra, dec: lastSearch.dec, cutout_pixels: px, max_dlam: tol, mode, include_values: mode === "einfach" && px <= 100,
+          urls_a: a.group.map(im => im.access_url), urls_b: b.group.map(im => im.access_url) }) });
+      const f = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(f.detail || ("HTTP " + r.status));
+      if (myRun !== lapse.run) return;
+      const img = new Image();
+      img.src = f.image_b64; img.alt = "Difference image pass " + a.epoch + " to " + b.epoch;
+      pic.replaceChildren(img);
+      const years = (mean(b.group.map(im => im.mjd)) - mean(a.group.map(im => im.mjd))) / 365.25;
+      const up = f.appeared && f.appeared.snr >= MTI_SNR ? f.appeared : null, down = f.vanished && f.vanished.snr >= MTI_SNR ? f.vanished : null;
+      const svg = el("svg", { class: "ov", viewBox: "0 0 100 100", preserveAspectRatio: "none" });
+      const at = q => toPercent(f, q.east_arcsec, q.north_arcsec);
+      const where = q => de(Math.abs(q.east_arcsec), 0) + "″ " + (q.east_arcsec >= 0 ? "east" : "westlich") + ", "
+        + de(Math.abs(q.north_arcsec), 0) + "″ " + (q.north_arcsec >= 0 ? "north" : "south") + " of the centre";
+      if (f.mode === "einfach") {
+        const ia = a.group.find(im => im.access_url === f.url_a), ib = b.group.find(im => im.access_url === f.url_b);
+        const when = im => (im ? im.date_iso.replace("T", " ").slice(0, 16) + " UTC" : "?");
+        meta.textContent = "Earlier image: " + when(ia) + ", " + de(f.wavelength_a_um, 3) + " µm\nLater image: " + when(ib) + ", " + de(f.wavelength_b_um, 3)
+          + " µm\nWavelength gap " + de(f.median_dlam_um, 3) + " µm · difference from " + de(f.diff_min, 2) + " to " + de(f.diff_max, 2) + " " + f.unit
+          + " · noise " + de(f.noise_mjy_sr, 3);
+        meta.style.whiteSpace = "pre-line";
+        const parts = [];
+        if (up) parts.push("Strongest increase: " + de(up.snr) + "σ, " + where(up) + ".");
+        if (down) parts.push("Strongest decrease: " + de(down.snr) + "σ, " + where(down) + ".");
+        verdict.textContent = parts.length ? parts.join(" ") : "No deviation above " + MTI_SNR + "σ.";
+        if (f.values) {
+          const link = document.createElement("a");
+          link.textContent = "Download difference values as CSV";
+          link.style.cssText = "display:inline-block;margin-top:6px;color:var(--accent);font-size:12px";
+          link.download = "differenz_durchgang_" + a.epoch + "_" + b.epoch + ".csv";
+          link.href = URL.createObjectURL(new Blob([f.values.map(row => row.map(v => (v === null ? "" : v)).join(";")).join("\n")], { type: "text/csv" }));
+          cap.append(link);
+        }
+      } else {
+        meta.textContent = f.n_pairs + " image pairs · mean wavelength gap " + de(f.median_dlam_um, 3) + " µm, at most " + de(f.max_dlam_um, 3) + " µm";
+        if (up && down) {
+          const dx = up.east_arcsec - down.east_arcsec, dy = up.north_arcsec - down.north_arcsec, d = Math.hypot(dx, dy);
+          const dir = DIRS[Math.round(((Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360) / 45) % 8];
+          verdict.textContent = "Moving object indicated: " + de(d) + "″ towards " + dir + " in " + de(years, 2) + " years, i.e. " + de(d / years)
+            + "″ per year (vanished " + de(down.snr) + "σ, appeared " + de(up.snr) + "σ).";
+        } else if (up || down) {
+          verdict.textContent = (up ? "Only a new signal (" + de(up.snr) + "σ)" : "Only a vanished signal (" + de(down.snr) + "σ)")
+            + ", no counterpart. This points to a brightness change or an image artefact rather than motion.";
+        } else {
+          verdict.textContent = "No signal above " + MTI_SNR + "σ: nothing visibly moved in this field.";
+        }
+      }
+      pic.append(svg);
+    } catch (e) {
+      if (myRun !== lapse.run) return;
+      msg.textContent = e.message;
+    }
+  }
+}
+function toggleLapse() {
+  if (lapse.timer) { stopLapse(); return; }
+  if (lapse.frames.length < 2) return;
+  document.getElementById("lapsePlay").textContent = "⏸ Pause";
+  lapse.timer = setInterval(() => showLapseFrame(lapse.index + 1), Number(document.getElementById("lapseSpeed").value));
+}
+document.getElementById("lapseMake").addEventListener("click", makeLapse);
+document.getElementById("mtiPreset").addEventListener("change", e => { if (e.target.value) document.getElementById("mtiTol").value = e.target.value; else document.getElementById("mtiTol").focus(); });
+document.getElementById("mtiTol").addEventListener("input", e => {
+  const v = String(Number(String(e.target.value).replace(",", ".")));
+  const preset = document.getElementById("mtiPreset");
+  preset.value = [...preset.options].some(o => o.value === v) ? v : "";
+});
+document.getElementById("lapsePlay").addEventListener("click", toggleLapse);
+document.getElementById("lapseSpeed").addEventListener("change", () => { if (lapse.timer) { stopLapse(); toggleLapse(); } });
+document.getElementById("lapseSlider").addEventListener("input", e => { stopLapse(); showLapseFrame(Number(e.target.value)); });
+document.getElementById("lapseTrack").addEventListener("change", () => showLapseFrame(lapse.index));
+document.getElementById("tileTrack").addEventListener("change", updateOverlays);
+
+// ---------- Wanderung im Bild einzeichnen (Punkte + Verbindungslinie wie in index_2.html) ----------
+function toPercent(f, east, north) {
+  const edge = (f.size_px || 100) * (f.pixel_scale_arcsec || 6.15);
+  return [50 - 100 * east / edge, 50 - 100 * north / edge];
+}
+function drawOverlay(host, tile, forceShow = false) {
+  host.querySelectorAll("svg.ov").forEach(n => n.remove());
+  const show = forceShow || document.getElementById("tileTrack").checked;
+  host.classList.toggle("nomark", !show);
+  const f = tile.f;
+  if (!show || !f || !track.length) return;
+
+  const svg = el("svg", { class: "ov", viewBox: "0 0 100 100", preserveAspectRatio: "none" });
+  const pts = track.map(m => ({ m, p: toPercent(f, m.x, m.y) }));
+  if (pts.length > 1) {
+    svg.append(el("polyline", { points: pts.map(q => q.p.join(",")).join(" "), fill: "none",
+      stroke: "#ffffff", "stroke-width": 1.4, "stroke-opacity": 0.9, "vector-effect": "non-scaling-stroke" }));
+  }
+  for (const q of pts) {                      // ein Punkt je Durchgang, in der Farbe des Durchgangs
+    const here = q.m.e === tile.img.epoch;
+    svg.append(el("ellipse", { cx: q.p[0], cy: q.p[1], rx: here ? 1.5 : 1.1, ry: here ? 1.5 : 1.1, fill: epochColor(q.m.e),
+      stroke: "#171b24", "stroke-width": 1, "vector-effect": "non-scaling-stroke" }));
+  }
+  if (f.source_detected && f.offset_east_arcsec != null) {      // gemessene Position in genau diesem Bild
+    const c = toPercent(f, f.offset_east_arcsec, f.offset_north_arcsec);
+    svg.append(el("ellipse", { cx: c[0], cy: c[1], rx: 3, ry: 3, fill: "none", stroke: "#ffffff", "stroke-width": 1.6, "vector-effect": "non-scaling-stroke" }));
+  }
+  host.append(svg);
+}
+function updateOverlays() {
+  document.getElementById("ovkey").hidden = track.length === 0;
+  const first = track[0];
+  for (const t of tiles) {
+    if (!t.f) continue;
+    drawOverlay(t.pic, t);
+    const f = t.f;
+    t.move.textContent = "";
+    if (!f.source_detected || f.offset_east_arcsec == null || !lastSearch) continue;
+    const dec = lastSearch.dec + f.offset_north_arcsec / 3600;
+    const ra = lastSearch.ra + f.offset_east_arcsec / 3600 / Math.cos(lastSearch.dec * Math.PI / 180);
+    let text = "RA " + ra.toFixed(5) + "°, Dec " + dec.toFixed(5) + "°";
+    if (first && t.img.epoch !== first.e) {
+      const dx = f.offset_east_arcsec - first.x, dy = f.offset_north_arcsec - first.y, d = Math.hypot(dx, dy);
+      const dir = DIRS[Math.round(((Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360) / 45) % 8];
+      text += " · since pass " + first.e + ": " + de(d) + "″ towards " + dir;
+    }
+    t.move.textContent = text;
+  }
+  if (zoom.open && tiles[zoomIndex]) drawOverlay(document.getElementById("zoomPic"), tiles[zoomIndex]);
+  if (lapse.frames.length && !lapse.timer) showLapseFrame(lapse.index);
+}
+
+// ---------- Ziel im Bild anklicken ----------
+let picked = null;
+function clearPick() {
+  picked = null;
+  document.getElementById("pick").style.display = "none";
+  document.getElementById("pickBar").style.display = "none";
+}
+document.getElementById("zoomPic").addEventListener("click", e => {
+  const f = tiles[zoomIndex] && tiles[zoomIndex].f;
+  if (!f || !lastSearch) return;
+  const box = document.getElementById("zoomPic").getBoundingClientRect();
+  const u = (e.clientX - box.left) / box.width, v = (e.clientY - box.top) / box.height;
+  const half = (f.size_px || Number(form.fov.value) || 100) * (f.pixel_scale_arcsec || 6.15) / 2;
+  const east = (0.5 - u) * 2 * half, north = (0.5 - v) * 2 * half;
+  const dec = lastSearch.dec + north / 3600;
+  const ra = (lastSearch.ra + east / 3600 / Math.cos(lastSearch.dec * Math.PI / 180) + 360) % 360;
+  picked = { ra, dec };
+  const mark = document.getElementById("pick");
+  mark.style.left = (u * 100) + "%"; mark.style.top = (v * 100) + "%"; mark.style.display = "block";
+  document.getElementById("pickText").textContent = "Selected: RA " + ra.toFixed(5) + "°, Dec " + dec.toFixed(5) + "° ("
+    + de(Math.abs(east), 0) + "″ " + (east >= 0 ? "east" : "westlich") + ", " + de(Math.abs(north), 0) + "″ " + (north >= 0 ? "north" : "south") + " of the image centre)";
+  document.getElementById("pickBar").style.display = "flex";
+});
+document.getElementById("pickGo").addEventListener("click", () => {
+  if (!picked) return;
+  form.target.value = picked.ra.toFixed(6) + " " + picked.dec.toFixed(6);
+  form.pmra.value = ""; form.pmdec.value = ""; form.epoch.value = "2000";
+  zoom.close();
+  search();
+});
+document.getElementById("prev").addEventListener("click", () => openZoom(zoomIndex - 1));
+document.getElementById("next").addEventListener("click", () => openZoom(zoomIndex + 1));
+document.getElementById("closeZoom").addEventListener("click", () => zoom.close());
+zoom.addEventListener("click", e => { if (e.target === zoom) zoom.close(); });
+zoom.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft") openZoom(zoomIndex - 1);
+  if (e.key === "ArrowRight") openZoom(zoomIndex + 1);
+});
+
+form.addEventListener("submit", e => { e.preventDefault(); search(); });
+document.querySelectorAll(".quick button").forEach(b =>
+  b.addEventListener("click", () => {
+    form.target.value = b.dataset.t;
+    form.pmra.value = b.dataset.pmra || "";
+    form.pmdec.value = b.dataset.pmdec || "";
+    form.epoch.value = b.dataset.epoch || "2000";
+    search();
+  }));
+
+const p = new URLSearchParams(location.search);
+const start = p.get("target") || (p.get("ra") && p.get("dec") ? p.get("ra") + " " + p.get("dec") : "");
+for (const k of ["detector", "fov", "n", "pmra", "pmdec", "epoch"]) if (p.has(k)) form[k].value = p.get(k);
+if (p.has("dlam")) { document.getElementById("mtiTol").value = p.get("dlam"); document.getElementById("mtiTol").dispatchEvent(new Event("input")); }
+if (start) { form.target.value = start; search(); }
+</script>
+</body>
+</html>
